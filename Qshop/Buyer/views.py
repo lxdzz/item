@@ -3,8 +3,6 @@ from django.http import HttpResponseRedirect, JsonResponse
 from Seller.models import *
 from Seller.views import setPassword
 from Buyer.models import *
-import time
-import datetime
 from django.core.paginator import Paginator
 
 
@@ -125,6 +123,11 @@ def user_order(request):
 def user_site(request):
     return render(request, 'buyer/user_site.html', locals())
 
+
+import time
+import datetime
+
+
 @loginValid
 def place_order(request):
     goods_id = request.GET.get('goods_id')
@@ -191,6 +194,38 @@ def place_order_more(request):
         order.order_total=order_total
         order.save()
     return render(request,"buyer/place_order.html",locals())
+
+from Qshop.settings import alipay_public_key_string, alipay_private_key_string
+from alipay import AliPay
+
+
+def AlipayViews(request):
+    order_number = request.GET.get("order_number")
+    order_total = request.GET.get("total")
+
+    # 实例化支付
+    alipay = AliPay(
+        appid=2016101200667730,
+        app_notify_url=None,
+        app_private_key_string=alipay_private_key_string,
+        alipay_public_key_string=alipay_public_key_string,
+        sign_type='RSA2'
+    )
+
+    # 实例化订单
+    order_string = alipay.api_alipay_trade_page_pay(
+        out_trade_no=order_number,  # 订单号
+        total_amount=str(order_total),  # 支付金额,是字符串
+        subject='水果交易',  # 支付主题
+        return_url='http://127.0.0.1:8000/Buyer/place_result/',  # 结果返回的地址
+        notify_url='http://127.0.0.1:8000/Buyer/place_result/',  # 订单状态发生改变后返回的地址
+    )  # 网页支付订单
+
+    # 拼接收款地址=支付宝网关+订单返回参数
+    result = "https://openapi.alipaydev.com/gateway.do?" + order_string
+
+    return HttpResponseRedirect(result)
+
 
 def place_result(request):
     out_trade_no = request.GET.get('out_trade_no')
