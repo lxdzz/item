@@ -463,3 +463,9 @@ class LeaveApi(Resource):
         leave.delete()
         self.result["data"]="%s 删除成功"%id
         return self.result
+
+@main.route("/tables/")
+def timetable():
+    calendar = Calendar().return_month()
+    now = datetime.datetime.now()
+    return render_template("timetable.html",**locals())
